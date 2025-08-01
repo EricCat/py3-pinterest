@@ -7,6 +7,8 @@ It is implemented by directly calling the pinterest servers, mimicking an actual
 
 If you see any issues, or find bugs feel free to report them here on the github repo.
 
+This is the repo from [Benji-create version](https://github.com/Benji-create/py3-pinterest)
+
 ## Community guides
 [Get started with pinterest automation](https://martechwithme.com/how-to-automate-pinterest-interactions-python "Martechwithme.com")
 

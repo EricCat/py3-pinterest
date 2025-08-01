@@ -19,7 +19,6 @@ from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
-
 AGENT_STRING = (
     "Mozilla/5.0 (Windows NT 6.1; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
@@ -34,7 +33,7 @@ USER_RESOURCE = "https://www.pinterest.com/_ngjs/resource/UserResource/get/"
 BOARD_PICKER_RESOURCE = (
     "https://www.pinterest.com/resource/BoardPickerBoardsResource/get/"
 )
-BOARDS_RESOURCE = "https://www.pinterest.com/_ngjs/resource/BoardsResource/get/"
+BOARDS_RESOURCE = "https://www.pinterest.com/resource/BoardsResource/get/"
 CREATE_BOARD_RESOURCE = "https://www.pinterest.com/resource/BoardResource/create/"
 FOLLOW_BOARD_RESOURCE = "https://www.pinterest.com/resource/BoardFollowResource/create/"
 UNFOLLOW_BOARD_RESOURCE = (
@@ -148,7 +147,7 @@ class Pinterest:
             [
                 ("Referer", HOME_PAGE),
                 ("X-Requested-With", "XMLHttpRequest"),
-                ("Accept", "application/json"),
+                ("Accept", "application/json, text/javascript, */*, q=0.01"),
                 ("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"),
                 ("User-Agent", self.user_agent),
             ]
@@ -176,7 +175,9 @@ class Pinterest:
             "POST", url=url, data=data, files=files, extra_headers=headers
         )
 
-    def login(self, headless=True, wait_time=15, proxy=None, lang="en", raspberry=False):
+    def login(
+        self, headless=True, wait_time=15, proxy=None, lang="en", raspberry=False
+    ):
         """
         Logs user in with the provided credentials.
         User session is stored in the 'cred_root' folder
@@ -192,7 +193,7 @@ class Pinterest:
         :return: Python dict object describing the Pinterest response.
         """
         chrome_options = ChromeOptions()
-        chrome_options.add_experimental_option('prefs', {'intl.accept_languages': lang})
+        chrome_options.add_experimental_option("prefs", {"intl.accept_languages": lang})
         if headless:
             chrome_options.add_argument("--headless")
 
@@ -205,7 +206,7 @@ class Pinterest:
             http_proxy.add_to_capabilities(chrome_options)
 
         # For other systems, we assume ChromeDriver is installed in a specific location.
-        if raspberry==False:
+        if raspberry == False:
             service = Service(ChromeDriverManager().install())
         # For Raspberry Pi, use the locally installed ChromeDriver
         else:
@@ -213,8 +214,8 @@ class Pinterest:
             chrome_options.add_argument("--disable-dev-shm-usage")
             chrome_options.add_argument("--remote-debugging-port=9222")
             service = Service("/usr/bin/chromedriver")
-            
-        driver = webdriver.Chrome(service=service,options=chrome_options)
+
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get("https://pinterest.com/login")
 
         try:
@@ -222,11 +223,12 @@ class Pinterest:
                 EC.element_to_be_clickable((By.ID, "email"))
             )
 
-            driver.find_element(by = By.ID, value='email').send_keys(self.email)
-            driver.find_element(by= By.ID, value="password").send_keys(self.password)
+            driver.find_element(by=By.ID, value="email").send_keys(self.email)
+            driver.find_element(by=By.ID, value="password").send_keys(self.password)
 
-            logins = driver.find_elements(by=By.XPATH, value="//*[contains(text(), 'Log in')]")
-
+            logins = driver.find_elements(
+                by=By.XPATH, value="//*[contains(text(), 'Log in')]"
+            )
 
             for login in logins:
                 login.click()
@@ -342,7 +344,13 @@ class Pinterest:
             url=BOARDS_RESOURCE, options=options, source_url=source_url
         )
 
-        result = self.get(url=url).json()
+        # Add the additional required headers
+        extra_headers = {
+            "x-pinterest-pws-handler": "www/[username]/_saved.js",
+            "x-pinterest-source-url": "/{}/_saved/".format(username),
+        }
+
+        result = self.get(url=url, headers=extra_headers).json()
         bookmark = result["resource"]["options"]["bookmarks"][0]
 
         self.bookmark_manager.add_bookmark(
@@ -640,7 +648,14 @@ class Pinterest:
         return self.post(url=PIN_RESOURCE_CREATE, data=data)
 
     def upload_pin(
-        self, board_id, image_file, description="", link="", title="", alt_text = "", section_id=None
+        self,
+        board_id,
+        image_file,
+        description="",
+        link="",
+        title="",
+        alt_text="",
+        section_id=None,
     ):
         """
         This method is similar to 'pin' except the image for the pin is a local file.
@@ -730,8 +745,13 @@ class Pinterest:
         scripts = soup.findAll("script")
         pin_data = None
         for s in scripts:
-            if "data-relay-response" in s.attrs and s.attrs["data-relay-response"] == "true":
-                pinJsonData = json.loads(s.contents[0])["response"]["data"]["v3GetPinQuery"]["data"]
+            if (
+                "data-relay-response" in s.attrs
+                and s.attrs["data-relay-response"] == "true"
+            ):
+                pinJsonData = json.loads(s.contents[0])["response"]["data"][
+                    "v3GetPinQuery"
+                ]["data"]
                 pin_data = pinJsonData
         if pin_data:
             return pin_data
@@ -1121,7 +1141,9 @@ class Pinterest:
         }
 
         url = self.req_builder.buildGet(url=BOARD_FEED_RESOURCE, options=options)
-        response = self.get(url=url, headers={'X-Pinterest-PWS-Handler':'www/[username].js'}).json()
+        response = self.get(
+            url=url, headers={"X-Pinterest-PWS-Handler": "www/[username].js"}
+        ).json()
         bookmark = response["resource"]["options"]["bookmarks"][0]
         self.bookmark_manager.add_bookmark(
             primary="board_feed", secondary=board_id, bookmark=bookmark

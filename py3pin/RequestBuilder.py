@@ -8,6 +8,8 @@ class RequestBuilder:
         pass
 
     def buildPost(self, options, source_url='/', context=None):
+        if context is None:
+           context = {}
         return self.url_encode({
             'source_url': source_url,
             'data': json.dumps({
@@ -18,6 +20,8 @@ class RequestBuilder:
         })
 
     def buildGet(self, url, options, source_url='/', context=None):
+        if context is None:
+           context = {}
         data = self.url_encode({
             'source_url': source_url,
             'data': json.dumps({
